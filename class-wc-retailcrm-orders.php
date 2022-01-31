@@ -182,6 +182,20 @@ if ( ! class_exists( 'WC_Retailcrm_Orders' ) ) :
                 $foundCustomerId = $foundCustomer['id'];
             }
 
+            // Custom code
+
+            $pvzPoint = $wcOrder->get_meta('_order-pvz');
+            
+            $this->order['delivery']['service']['code'] = 'sdek';
+            $this->order['delivery']['data']['tariffType'] = $wcOrder->get_meta('_order-tariff');
+            $this->order['delivery']['data']['receiverCity'] = $wcOrder->get_meta('_order-cdek-citycode');
+
+            if(!empty($pvzPoint)) {
+                $this->order['delivery']['data']['pickuppointId'] = $pvzPoint; 
+            } 
+
+            /*-------Custom  code end-----------*/
+
             $this->order['contragent']['contragentType'] = 'individual';
 
             if ($this->retailcrm->getCorporateEnabled() && static::isCorporateOrder($wcOrder)) {
@@ -384,6 +398,15 @@ if ( ! class_exists( 'WC_Retailcrm_Orders' ) ) :
             }
 
             $order_data['delivery']['address'] = $this->order_address->build($order)->get_data();
+            
+            // Custom code - отправка геокода города и доп скидки из fee
+
+            $geocode = $order->get_meta('_order-geocode');
+            $order_data['delivery']['address']['cityId'] = $geocode;
+            $order_data['discountManualAmount'] = abs($order->get_total_fees());
+
+            //------------------
+            
             $order_items = array();
 
             /** @var WC_Order_Item_Product $item */
@@ -393,9 +416,6 @@ if ( ! class_exists( 'WC_Retailcrm_Orders' ) ) :
             }
 
             $order_data['items'] = $order_items;
-
-            $order_data['discountManualAmount'] = 0;
-            $order_data['discountManualPercent'] = 0;
 
             if (!$update && $order->get_total() > 0) {
                 $this->order_payment->is_new = true;
